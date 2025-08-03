@@ -14,7 +14,7 @@ part1();
 const favNumber2 = [7, 11, 22];
 async function part2() {
   try {
-    let response = await axios.get(`${baseURL}/${favNumber2}?json`);
+    let response = await axios.get(`${baseURL}/${favNumber2.join(",")}?json`);
     console.log(response.data);
   } catch (error) {
     console.error("Error fetching data for part2: ", error);
@@ -23,7 +23,7 @@ async function part2() {
 part2();
 
 async function part3() {
-  const button = document.querySelector("button");
+  const button = document.getElementById("get-facts");
   button.addEventListener("click", clickAndDisplayData);
 
   async function clickAndDisplayData() {
