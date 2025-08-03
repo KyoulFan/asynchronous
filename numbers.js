@@ -21,3 +21,27 @@ async function part2() {
   }
 }
 part2();
+
+async function part3() {
+  const button = document.querySelector("button");
+  button.addEventListener("click", clickAndDisplayData);
+
+  async function clickAndDisplayData() {
+    try {
+      let facts = await Promise.all(
+        Array.from({ length: 4 }, () =>
+          axios.get(`${baseURL}/${favNumber}?json`)
+        )
+      );
+      facts.forEach((response) => {
+        document.body.insertAdjacentHTML(
+          "beforeend",
+          `<p>${response.data.text}</p>`
+        );
+      });
+    } catch (error) {
+      console.error("Error fetching data for part3: ", error);
+    }
+  }
+}
+part3();

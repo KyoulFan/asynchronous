@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Async JS Samples: Promises & Async/Await</title>
+    <style>
+      body {
+        font-family: system-ui, Arial, sans-serif;
+        margin: 24px;
+        line-height: 1.5;
+      }
+      button {
+        margin: 6px 6px 12px 0;
+        padding: 6px 10px;
+      }
+      .card {
+        display: inline-block;
+        margin: 6px;
+      }
+      .fact {
+        padding: 6px 8px;
+        background: #f6f6f6;
+        border-radius: 6px;
+        margin: 4px 0;
+      }
+      .row {
+        margin: 12px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Async JS Samples</h1>
+
+    <h2>Part 1: Number Facts</h2>
+
+    <div class="row">
+      <button id="one-fact-promise">
+        [Promises] Get one fact (favorite number)
+      </button>
+      <button id="one-fact-async">
+        [Async/Await] Get one fact (favorite number)
+      </button>
+      <div id="facts-one"></div>
+    </div>
+
+    <div class="row">
+      <button id="multi-facts">[Promises] Get multiple numbers facts</button>
+      <div id="facts-multi"></div>
+    </div>
+
+    <div class="row">
+      <button id="four-facts">
+        [Promise.all] Get 4 facts of the same number
+      </button>
+      <div id="facts-four"></div>
+    </div>
+
+    <h2>Part 2: Deck of Cards</h2>
+
+    <div class="row">
+      <button id="one-card">[Promises] Draw 1 card from a new deck</button>
+    </div>
+
+    <div class="row">
+      <button id="two-cards-sequential">
+        [Promise chaining] Draw 2 cards from the same new deck
+      </button>
+    </div>
+
+    <div class="row">
+      <button id="init-deck">Init deck for UI draw</button>
+      <button id="draw-card" disabled>Draw card</button>
+      <span id="remaining"></span>
+      <div id="cards"></div>
+    </div>
+
+    <script>
+      // ---------- Helpers ----------
+      const fav = 7; // 你的“最喜欢的数字”
+      const $ = (id) => document.getElementById(id);
+      const show = (containerId, texts) => {
+        const box = $(containerId);
+        box.innerHTML = "";
+        texts.forEach((t) => {
+          const div = document.createElement("div");
+          div.className = "fact";
+          div.textContent = t;
+          box.appendChild(div);
+        });
+      };
+
+      // ============================
+      // Part 1: Number Facts
+      // API: https://numbersapi.com
+      // ============================
+
+      // 1) 单个数字（Promises 版本）
+      $("one-fact-promise").addEventListener("click", () => {
+        fetch(`https://numbersapi.com/${fav}?json`)
+          .then((res) => {
+            if (!res.ok) throw new Error("Network error");
+            return res.json();
+          })
+          .then((data) => {
+            show("facts-one", [data.text]);
+          })
+          .catch((err) => {
+            show("facts-one", ["Error: " + err.message]);
+          });
+      });
+
+      // 1) 单个数字（Async/Await 版本）
+      $("one-fact-async").addEventListener("click", async () => {
+        try {
+          const res = await fetch(`https://numbersapi.com/${fav}?json`);
+          if (!res.ok) throw new Error("Network error");
+          const data = await res.json();
+          show("facts-one", [data.text]);
+        } catch (err) {
+          show("facts-one", ["Error: " + err.message]);
+        }
+      });
+
+      // 2) 多个数字一次请求（Promises）
+      $("multi-facts").addEventListener("click", () => {
+        const nums = [3, 9, 42, 100];
+        fetch(`https://numbersapi.com/${nums.join(",")}?json`)
+          .then((res) => {
+            if (!res.ok) throw new Error("Network error");
+            return res.json();
+          })
+          .then((data) => {
+            // data 是一个以数字为 key 的对象
+            const facts = nums.map((n) => data[n].text);
+            show("facts-multi", facts);
+          })
+          .catch((err) => {
+            show("facts-multi", ["Error: " + err.message]);
+          });
+      });
+
+      // 3) 同一数字 4 条事实（Promise.all 并行）
+      $("four-facts").addEventListener("click", () => {
+        const reqs = Array.from({ length: 4 }, () =>
+          fetch(`https://numbersapi.com/${fav}?json`).then((r) => {
+            if (!r.ok) throw new Error("Network error");
+            return r.json();
+          })
+        );
+
+        Promise.all(reqs)
+          .then((results) => {
+            const facts = results.map((x) => x.text);
+            show("facts-four", facts);
+          })
+          .catch((err) => {
+            show("facts-four", ["Error: " + err.message]);
+          });
+      });
+
+      // ============================
+      // Part 2: Deck of Cards
+      // API: https://deckofcardsapi.com/
+      // ============================
+
+      // 1) 新牌堆抽 1 张
+      $("one-card").addEventListener("click", () => {
+        fetch("https://deckofcardsapi.com/api/deck/new/draw/?count=1")
+          .then((res) => res.json())
+          .then((data) => {
+            const card = data.cards[0];
+            const desc = `${card.value.toLowerCase()} of ${card.suit.toLowerCase()}`;
+            console.log(desc);
+            alert("Console logged: " + desc);
+          })
+          .catch((err) => alert("Error: " + err.message));
+      });
+
+      // 2) 同一副牌顺序抽 2 张（Promise 链）
+      $("two-cards-sequential").addEventListener("click", () => {
+        let deckId = null;
+        let firstCard = null;
+
+        fetch("https://deckofcardsapi.com/api/deck/new/shuffle/?deck_count=1")
+          .then((res) => res.json())
+          .then((data) => {
+            deckId = data.deck_id;
+            return fetch(
+              `https://deckofcardsapi.com/api/deck/${deckId}/draw/?count=1`
+            );
+          })
+          .then((res) => res.json())
+          .then((data) => {
+            firstCard = data.cards[0];
+            return fetch(
+              `https://deckofcardsapi.com/api/deck/${deckId}/draw/?count=1`
+            );
+          })
+          .then((res) => res.json())
+          .then((data) => {
+            const secondCard = data.cards[0];
+            const c1 = `${firstCard.value.toLowerCase()} of ${firstCard.suit.toLowerCase()}`;
+            const c2 = `${secondCard.value.toLowerCase()} of ${secondCard.suit.toLowerCase()}`;
+            console.log(c1, "and", c2);
+            alert("Console logged 2 cards.\nOpen devtools to see output.");
+          })
+          .catch((err) => alert("Error: " + err.message));
+      });
+
+      // 3) UI 抽牌：初始化 + 点击抽到没牌
+      let uiDeckId = null;
+      const drawBtn = $("draw-card");
+      const remainingSpan = $("remaining");
+      const cardsBox = $("cards");
+
+      $("init-deck").addEventListener("click", async () => {
+        try {
+          const res = await fetch(
+            "https://deckofcardsapi.com/api/deck/new/shuffle/?deck_count=1"
+          );
+          const data = await res.json();
+          uiDeckId = data.deck_id;
+          drawBtn.disabled = false;
+          remainingSpan.textContent = `Remaining: ${data.remaining}`;
+          cardsBox.innerHTML = "";
+        } catch (e) {
+          alert("Init error: " + e.message);
+        }
+      });
+
+      $("draw-card").addEventListener("click", async () => {
+        if (!uiDeckId) return alert('Please click "Init deck" first.');
+        try {
+          const res = await fetch(
+            `https://deckofcardsapi.com/api/deck/${uiDeckId}/draw/?count=1`
+          );
+          const data = await res.json();
+          remainingSpan.textContent = `Remaining: ${data.remaining}`;
+
+          if (data.success && data.cards.length) {
+            const img = document.createElement("img");
+            img.src = data.cards[0].image; // API 提供的卡面图片
+            img.alt = `${data.cards[0].value} of ${data.cards[0].suit}`;
+            img.width = 120;
+            const wrap = document.createElement("div");
+            wrap.className = "card";
+            wrap.appendChild(img);
+            cardsBox.appendChild(wrap);
+          }
+
+          if (data.remaining === 0) {
+            drawBtn.disabled = true;
+            alert("No cards left.");
+          }
+        } catch (e) {
+          alert("Draw error: " + e.message);
+        }
+      });
+    </script>
+  </body>
+</html>
