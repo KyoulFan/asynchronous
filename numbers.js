@@ -1,5 +1,5 @@
 let favNumber = 42;
-let baseURL = "https://numbersapi.com";
+let baseURL = "http://numbersapi.com";
 
 async function part1() {
   try {
